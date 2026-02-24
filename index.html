@@ -85,7 +85,10 @@
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Adviser Suitability Note</h3>
-                    <button onclick="loadSample()" class="text-xs text-brand-400 hover:text-brand-300 transition">Load sample note</button>
+                    <div class="flex gap-2">
+                        <button onclick="loadSample('good')" data-sample="good" class="sample-btn text-xs px-3 py-1 rounded-full transition bg-brand-600 text-white">✓ Compliant sample</button>
+                        <button onclick="loadSample('weak')" data-sample="weak" class="sample-btn text-xs px-3 py-1 rounded-full transition bg-surface-900 text-gray-400">✗ Non-compliant sample</button>
+                    </div>
                 </div>
                 <textarea id="noteInput" rows="14" class="w-full bg-surface-900 border border-white/10 rounded-xl p-4 text-gray-300 placeholder-gray-600 focus:outline-none focus:border-brand-500/50 resize-none font-mono leading-relaxed" placeholder="Paste an adviser suitability note here..."></textarea>
             </div>
@@ -283,7 +286,10 @@ print(report.passed)           <span class="text-gray-500"># True</span>
     </footer>
 
 <script>
-const SAMPLE_NOTE = `Annual Review Meeting — Mrs Sarah Henderson
+const SAMPLE_NOTES = {
+    good: {
+        label: "Well-documented note (Compliant)",
+        text: `Annual Review Meeting — Mrs Sarah Henderson
 Date: 14 January 2026 | Adviser: James Mitchell, DipPFS
 
 Mrs Henderson attended for her annual investment review. She is 58 years old, planning to retire at 63. Her primary objective remains generating a sustainable retirement income from age 63, supplemented by her defined benefit pension (estimated £12,400 p.a. from age 60). She also wishes to maintain a capital reserve for potential care costs in later life.
@@ -300,9 +306,33 @@ Recommendation: Maintain current allocation in Vanguard LifeStrategy 60%, which 
 
 I discussed whether a higher equity allocation might be appropriate given the 5-year horizon, but Mrs Henderson preferred to maintain the current balanced approach given her proximity to retirement. We also considered moving to a lower-cost platform but concluded that Transact's functionality and consolidation benefits justify the marginal cost difference.
 
-Mrs Henderson confirmed she was happy with the recommendation and asked me to proceed. A copy of this suitability report will be issued within 5 working days.`;
+Mrs Henderson confirmed she was happy with the recommendation and asked me to proceed. A copy of this suitability report will be issued within 5 working days.`
+    },
+    weak: {
+        label: "Weak note with gaps (Non-Compliant)",
+        text: `Client Meeting Note — Mr David Thompson
+Date: 8 February 2026 | Adviser: Sarah Williams
 
-const SIMULATED_RESULTS = {
+Met with Mr Thompson to discuss his investment options. He wants to grow his money and is thinking about retirement in about 10 years. He mentioned he has some savings and earns a decent salary.
+
+I assessed his risk profile and he seems fairly comfortable with risk. He's invested before so understands how markets work.
+
+I recommended the Baillie Gifford Managed Fund as it has strong historic returns and fits his growth objective. The fund charges 0.43% annually. My advice fee is 1% initial and 0.5% ongoing.
+
+Mr Thompson was happy to proceed.`
+    }
+};
+
+let currentSample = 'good';
+
+const SIMULATED_RESULTS_GOOD = {"overall_score":1.0,"overall_rating":"Compliant","passed":true,"summary":"All nine elements of the FCA suitability framework are fully present with comprehensive supporting evidence. This note demonstrates strong compliance with COBS 9.2 requirements.","items":[{"element_id":"client_objectives","status":"present","score":1.0,"severity":"critical","required":true,"evidence":"\"Her primary objective remains generating a sustainable retirement income from age 63, supplemented by her defined benefit pension... She also wishes to maintain a capital reserve for potential care costs in later life.\"","suggestions":[],"notes":"The note clearly documents the client's investment objectives, including her time horizon (5 years to retirement), purpose of investment (sustainable retirement income), and specific goals (maintaining a capital reserve for care costs)."},{"element_id":"risk_attitude","status":"present","score":1.0,"severity":"critical","required":true,"evidence":"\"Risk profile was reassessed using our standard questionnaire. Mrs Henderson scored 5/10, consistent with a 'Balanced' risk category — unchanged from last year.\"","suggestions":[],"notes":"The note clearly documents the client's attitude to risk, including the outcome of a risk profiling exercise and the assigned risk category of \"Balanced\"."},{"element_id":"capacity_for_loss","status":"present","score":1.0,"severity":"critical","required":true,"evidence":"\"I confirmed that a significant loss in her investment portfolio would reduce her retirement options but would not compromise her ability to meet essential living costs.\"","suggestions":[],"notes":"The note clearly distinguishes capacity for loss from attitude to risk."},{"element_id":"financial_situation","status":"present","score":1.0,"severity":"high","required":true,"evidence":"\"Current financial position: salary £52,000 (NHS Band 8a), monthly surplus after expenses approximately £800. Existing portfolio: Vanguard LifeStrategy 60% via Transact platform, current value £187,400.\"","suggestions":[],"notes":"Comprehensive summary of the client's financial position."},{"element_id":"knowledge_and_experience","status":"present","score":1.0,"severity":"high","required":true,"evidence":"\"Mrs Henderson has held ISA investments for 12 years and understands the risk-return relationship for multi-asset funds.\"","suggestions":[],"notes":"Prior investment experience clearly documented."},{"element_id":"recommendation_rationale","status":"present","score":1.0,"severity":"critical","required":true,"evidence":"\"Maintain current allocation in Vanguard LifeStrategy 60%, which provides global equity and bond diversification consistent with her balanced risk profile and 5-year time horizon to retirement.\"","suggestions":[],"notes":"Recommendation clearly linked to client profile."},{"element_id":"charges_and_costs","status":"present","score":1.0,"severity":"high","required":true,"evidence":"\"The fund's 0.22% OCF remains competitive. Platform fee: 0.15% (Transact). Adviser fee: 0.5% ongoing, equating to approximately £937/year. Total cost: 0.87%.\"","suggestions":[],"notes":"All charges clearly disclosed."},{"element_id":"alternatives_considered","status":"present","score":1.0,"severity":"medium","required":false,"evidence":"\"I discussed whether a higher equity allocation might be appropriate... We also considered moving to a lower-cost platform but concluded that Transact's functionality justify the marginal cost difference.\"","suggestions":[],"notes":"Alternatives documented with clear reasoning."},{"element_id":"client_confirmation","status":"present","score":1.0,"severity":"low","required":false,"evidence":"\"Mrs Henderson confirmed she was happy with the recommendation and asked me to proceed.\"","suggestions":[],"notes":"Client acknowledgement clearly documented."}]};
+
+const SIMULATED_RESULTS_WEAK = {"overall_score":0.4062,"overall_rating":"Non-Compliant","passed":false,"summary":"The evaluation revealed significant compliance gaps across nine assessed elements, with only one element fully present. Critical deficiencies were identified in client objectives, risk attitude, capacity for loss, and recommendation rationale, all of which were only partially met or missing. The financial situation and alternatives considered were not addressed at all. This indicates substantial need for improvement in the suitability assessment process.","items":[{"element_id":"client_objectives","status":"partial","score":0.5,"severity":"critical","required":true,"evidence":"\"He wants to grow his money and is thinking about retirement in about 10 years\" — indicates purpose and time horizon but lacks specific goals or constraints.","suggestions":["Include specific goals or constraints stated by the client","Clarify any income requirements or other financial needs","Provide more detail on the client's overall investment strategy"],"notes":"While the note provides some information about investment purpose and time horizon, it does not fully document all required elements."},{"element_id":"risk_attitude","status":"partial","score":0.5,"severity":"critical","required":true,"evidence":"\"I assessed his risk profile and he seems fairly comfortable with risk.\"","suggestions":["Include a named risk category (e.g., cautious, balanced, adventurous)","Provide a score from a risk questionnaire if applicable","Explicitly document the outcome of the risk profiling exercise"],"notes":"The note suggests comfort with risk but lacks a specific risk category or questionnaire score."},{"element_id":"capacity_for_loss","status":"missing","score":0.0,"severity":"critical","required":true,"evidence":null,"suggestions":["Include a statement regarding the client's capacity for loss","Document disposable income and emergency funds","Clarify essential expenditure and how losses would affect lifestyle"],"notes":"No mention of capacity for loss or whether the client can sustain capital loss without impacting living standards."},{"element_id":"financial_situation","status":"missing","score":0.0,"severity":"high","required":true,"evidence":null,"suggestions":["Include specific figures for income and expenditure","Detail assets and liabilities","Mention any existing investment holdings relevant to the recommendation"],"notes":"Only mentions 'some savings' and 'decent salary' — insufficient detail."},{"element_id":"knowledge_and_experience","status":"partial","score":0.5,"severity":"high","required":true,"evidence":"\"He's invested before so understands how markets work\" — indicates some experience but no specifics.","suggestions":["Include specific details about types of investments held","Document the duration of investment experience","Assess and record any limitations or gaps in knowledge"],"notes":"Prior experience mentioned but lacks sufficient detail on investment types and extent of knowledge."},{"element_id":"recommendation_rationale","status":"partial","score":0.5,"severity":"critical","required":true,"evidence":"\"I recommended the Baillie Gifford Managed Fund as it has strong historic returns and fits his growth objective.\"","suggestions":["Link the recommendation to the client's specific financial situation","Articulate how the fund's risk aligns with the client's risk profile","Explain how historic returns relate to retirement timeline and growth needs"],"notes":"The rationale mentions growth objective but does not connect fund features to the client's specific situation or risk tolerance."},{"element_id":"charges_and_costs","status":"present","score":1.0,"severity":"high","required":true,"evidence":"\"The fund charges 0.43% annually. My advice fee is 1% initial and 0.5% ongoing.\"","suggestions":[],"notes":"All relevant charges clearly disclosed."},{"element_id":"alternatives_considered","status":"missing","score":0.0,"severity":"medium","required":false,"evidence":null,"suggestions":["Include a comparison with at least one alternative product","Provide rationale for why the chosen product is more suitable","Document other options considered during the advisory process"],"notes":"No mention of alternative products or strategies."},{"element_id":"client_confirmation","status":"partial","score":0.5,"severity":"low","required":false,"evidence":"\"Mr Thompson was happy to proceed.\"","suggestions":["Include confirmation that the client received and understood the recommendation","Add formal acknowledgement documentation"],"notes":"Some acknowledgement present but lacks formal documentation of understanding."}]};
+
+function getResultsForCurrentSample() {
+    return currentSample === 'good' ? SIMULATED_RESULTS_GOOD : SIMULATED_RESULTS_WEAK;
+}
+const __REMOVED__ = {
     overall_score: 0.91,
     overall_rating: "Minor Gaps",
     passed: true,
@@ -338,8 +368,17 @@ const SIMULATED_RESULTS = {
     ]
 };
 
-function loadSample() {
-    document.getElementById('noteInput').value = SAMPLE_NOTE;
+function loadSample(key) {
+    if (key) currentSample = key;
+    document.getElementById('noteInput').value = SAMPLE_NOTES[currentSample].text;
+    document.getElementById('results').classList.add('hidden');
+    // Update toggle buttons
+    document.querySelectorAll('.sample-btn').forEach(btn => {
+        btn.classList.toggle('bg-brand-600', btn.dataset.sample === currentSample);
+        btn.classList.toggle('text-white', btn.dataset.sample === currentSample);
+        btn.classList.toggle('bg-surface-900', btn.dataset.sample !== currentSample);
+        btn.classList.toggle('text-gray-400', btn.dataset.sample !== currentSample);
+    });
 }
 
 function runEvaluation() {
@@ -353,7 +392,7 @@ function runEvaluation() {
 
     setTimeout(() => {
         document.getElementById('loading').classList.add('hidden');
-        renderResults(SIMULATED_RESULTS);
+        renderResults(getResultsForCurrentSample());
         document.getElementById('runBtn').disabled = false;
         document.getElementById('runBtn').classList.remove('opacity-50');
     }, 2800);
@@ -456,7 +495,7 @@ function copyCode() {
 }
 
 // Load sample on page load
-document.addEventListener('DOMContentLoaded', loadSample);
+document.addEventListener('DOMContentLoaded', () => loadSample('weak'));
 </script>
 
 </body>
